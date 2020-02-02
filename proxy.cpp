@@ -9,13 +9,14 @@
 #include <strings.h>
 #include <netdb.h>
 #include <signal.h>
+#include <regex>
 
 /* port numbers */
 #define HTTP_PORT 80
 #define PROXY_PORT 8080
 
 /* string sizes */
-#define MESSAGE_SIZE 2048
+#define MESSAGE_SIZE 4096
 
 using namespace std; 
 
@@ -28,7 +29,18 @@ void cleanExit(int sig){
 	exit(0);
 }
 
-void modified_response(); 
+string modified_response(char response []){
+	string parsed_response = string(response);
+	// changes occurences of floppy/Floppy to Trolly
+	regex reFloppy("([fF]loppy)"); 
+	regex_replace(parsed_response, reFloppy, "Trolly");
+
+	// changes occurences of Italy to Japan
+	regex reItaly("(Italy)"); 
+	regex_replace(parsed_response, reItaly, "Japan");
+
+	return parsed_response;
+} 
 
 
 int main(int argc, char* const argv[]){
@@ -141,12 +153,14 @@ int main(int argc, char* const argv[]){
 				////////////////////////
 				// Modify response... //
 				////////////////////////
-				modified_response();
 
-				//we are not modifying here, just passing the response along
-				//printf("%s\n", server_response);
-				cout<<server_response<<endl; 
-				bcopy(server_response, client_response, serverBytes);
+				char response_array[MESSAGE_SIZE];
+
+				strcpy(response_array, modified_response(server_response).c_str()); 
+
+				//cout<<server_response<<endl; 
+				//bcopy(server_response, client_response, serverBytes);
+				bcopy(response_array, client_response, serverBytes);
 
 				//send http response to client
 				if (send(data_sock, client_response, serverBytes, 0) < 0){
@@ -154,9 +168,11 @@ int main(int argc, char* const argv[]){
 				}
 				bzero(client_response, MESSAGE_SIZE);
 				bzero(server_response, MESSAGE_SIZE);
-			}//while recv() from server
-		}//while recv() from client
+			}
+		}
+
 		close(data_sock);
-	}//infinite loop
+	}
+
 	return 0;
 }
