@@ -1,0 +1,10 @@
+This is a basic text file.
+It tells a simple story about my floppy-eared friend Floppy,
+who is from Italy. Floppy is a dog, I think.
+
+Without your proxy, you should be able to view this page just fine.
+
+With your proxy, this page should look a bit different,
+with all mentions of my friend Floppy from Italy
+being changed into something else.  
+The page should still be formatted properly.
