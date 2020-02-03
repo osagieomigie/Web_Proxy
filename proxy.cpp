@@ -16,7 +16,7 @@
 #define PROXY_PORT 8080
 
 /* string sizes */
-#define MESSAGE_SIZE 4096
+#define MESSAGE_SIZE 2048 
 
 using namespace std; 
 
@@ -31,13 +31,14 @@ void cleanExit(int sig){
 
 string modified_response(char response []){
 	string parsed_response = string(response);
+
 	// changes occurences of floppy/Floppy to Trolly
 	regex reFloppy("([fF]loppy)"); 
-	regex_replace(parsed_response, reFloppy, "Trolly");
+	parsed_response = regex_replace(parsed_response, reFloppy, "Trolly");
 
 	// changes occurences of Italy to Japan
 	regex reItaly("(Italy)"); 
-	regex_replace(parsed_response, reItaly, "Japan");
+	parsed_response = regex_replace(parsed_response, reItaly, "Japan");
 
 	return parsed_response;
 } 
@@ -153,13 +154,16 @@ int main(int argc, char* const argv[]){
 				////////////////////////
 				// Modify response... //
 				////////////////////////
+				char response_array[10*MESSAGE_SIZE];
 
-				char response_array[MESSAGE_SIZE];
+				cout<<"Modified response: "<<endl;
+				cout<<  modified_response(server_response)<<endl; 
 
+				//change modified response string to char array
 				strcpy(response_array, modified_response(server_response).c_str()); 
+				cout<<response_array<<endl; 
 
 				//cout<<server_response<<endl; 
-				//bcopy(server_response, client_response, serverBytes);
 				bcopy(response_array, client_response, serverBytes);
 
 				//send http response to client
@@ -168,6 +172,7 @@ int main(int argc, char* const argv[]){
 				}
 				bzero(client_response, MESSAGE_SIZE);
 				bzero(server_response, MESSAGE_SIZE);
+				bzero(response_array, MESSAGE_SIZE);
 			}
 		}
 
