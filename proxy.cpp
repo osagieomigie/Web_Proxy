@@ -31,14 +31,14 @@ void cleanExit(int sig){
 
 string modified_response(char response [], int newResponseLength){
 	string parsed_response = string(response);
-
+	
 	// changes anchor tags containing floppy to trolly
 	regex a("<a href=\"(.*?)\">"); 
-	parsed_response = regex_replace(parsed_response, a, "<a href=""./trollface.jpg"">");
+	parsed_response = regex_replace(parsed_response, a, "<a href=""http://pages.cpsc.ucalgary.ca/~carey/CPSC441/trollface.jpg"">");
 
 	// changes image sources containing floppy to trolly
-	regex imgsrc("<img src=.*>"); 
-	parsed_response = regex_replace(parsed_response, imgsrc, "<img src=\"./trollface.jpg\" width=\"300\" height=\"250\">");
+	regex imgsrc("<img src=.*[f|Floppy].*>"); 
+	parsed_response = regex_replace(parsed_response, imgsrc, "<img src=\"http://pages.cpsc.ucalgary.ca/~carey/CPSC441/trollface.jpg\" width=\"300\" height=\"250\">");
 
 	//changes occurences of floppy/Floppy to Trolly
 	regex reFloppy("([fF]loppy)"); 
@@ -188,16 +188,19 @@ int main(int argc, char* const argv[]){
 				
 				// Modify response
 				char response_array[10*MESSAGE_SIZE];
+				string parsed_response = string(server_response);
+				int messageType = parsed_response.find("Content-Type: image", 0);
 
-				cout<<"Modified response: "<<endl;
-				cout<<  modified_response(server_response, modify_Header(server_response))<<endl; 
-
-				//change modified response string to char array
-				strcpy(response_array, modified_response(server_response, modify_Header(server_response)).c_str()); 
-				//cout<<response_array<<endl; 
-
-				//cout<<server_response<<endl; 
-				bcopy(response_array, client_response, serverBytes);
+				cout<<server_response<<endl; 
+				
+				// check message type, if image dont modify 
+				if (messageType == std::string::npos){
+					//change modified response string to char array
+					strcpy(response_array, modified_response(server_response, modify_Header(server_response)).c_str()); 
+					bcopy(response_array, client_response, serverBytes);
+				}else{
+					bcopy(server_response, client_response, serverBytes);
+				}
 
 				//send http response to client
 				if (send(data_sock, client_response, serverBytes, 0) < 0){
