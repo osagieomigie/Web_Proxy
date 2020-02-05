@@ -13,7 +13,7 @@
 
 /* port numbers */
 #define HTTP_PORT 80
-#define PROXY_PORT 8080
+//#define PROXY_PORT 8080
 
 /* string sizes */
 #define MESSAGE_SIZE 2048 
@@ -29,22 +29,53 @@ void cleanExit(int sig){
 	exit(0);
 }
 
-string modified_response(char response []){
+string modified_response(char response [], int newResponseLength){
 	string parsed_response = string(response);
 
-	// changes occurences of floppy/Floppy to Trolly
+	// changes image sources containing floppy to trolly
+	regex imgsrc("<img src=.*\\>"); 
+	parsed_response = regex_replace(parsed_response, imgsrc, "<img src=""http://pages.cpsc.ucalgary.ca/~carey/CPSC441/trollface.jpg"" width=""300"" height=""250""/>");
+
+	//changes occurences of floppy/Floppy to Trolly
 	regex reFloppy("([fF]loppy)"); 
 	parsed_response = regex_replace(parsed_response, reFloppy, "Trolly");
 
-	// changes occurences of Italy to Japan
+	// changes occurences of Italy to Japan 
 	regex reItaly("(Italy)"); 
 	parsed_response = regex_replace(parsed_response, reItaly, "Japan");
+
+	// modified content length 
+	regex contentLength("(Content-Length:.*)"); 
+	parsed_response = regex_replace(parsed_response, contentLength, "Content-Length: " + to_string(newResponseLength));
 
 	return parsed_response;
 } 
 
+int modify_Header(char response []){
+	string parsed_response = string(response);
+	int startSearch = 0; 
+	int newResponseSize = 0; 
+	int stringLength = parsed_response.length(); 
+	int findCRLF = parsed_response.find("\r\n", startSearch);
+
+	if (findCRLF != std::string::npos){
+		string newResponseLength = parsed_response.substr(findCRLF, stringLength);
+		newResponseSize = newResponseLength.length(); 
+	}
+
+	return newResponseSize;
+}
+
 
 int main(int argc, char* const argv[]){
+
+	if (argc != 2){
+		cout<< "Usage: Enter a valid port number as an argument."<<endl;
+		exit(-1);
+	}
+
+	int PROXY_PORT = atoi(argv[1]);  
+
 	char client_request[MESSAGE_SIZE], server_request[MESSAGE_SIZE], server_response[10*MESSAGE_SIZE], client_response[10*MESSAGE_SIZE];
 	char url[MESSAGE_SIZE], host[MESSAGE_SIZE], path[MESSAGE_SIZE];
 	int clientBytes, serverBytes, i;
@@ -151,16 +182,14 @@ int main(int argc, char* const argv[]){
 			serverBytes = 0;
 			while((serverBytes = recv(web_sock, server_response, MESSAGE_SIZE, 0)) > 0){
 				
-				////////////////////////
-				// Modify response... //
-				////////////////////////
+				// Modify response
 				char response_array[10*MESSAGE_SIZE];
 
 				cout<<"Modified response: "<<endl;
-				cout<<  modified_response(server_response)<<endl; 
+				cout<<  modified_response(server_response, modify_Header(server_response))<<endl; 
 
 				//change modified response string to char array
-				strcpy(response_array, modified_response(server_response).c_str()); 
+				strcpy(response_array, modified_response(server_response, modify_Header(server_response)).c_str()); 
 				cout<<response_array<<endl; 
 
 				//cout<<server_response<<endl; 
@@ -172,7 +201,7 @@ int main(int argc, char* const argv[]){
 				}
 				bzero(client_response, MESSAGE_SIZE);
 				bzero(server_response, MESSAGE_SIZE);
-				bzero(response_array, MESSAGE_SIZE);
+				//bzero(response_array, MESSAGE_SIZE);
 			}
 		}
 
