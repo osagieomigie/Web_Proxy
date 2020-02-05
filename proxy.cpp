@@ -32,9 +32,13 @@ void cleanExit(int sig){
 string modified_response(char response [], int newResponseLength){
 	string parsed_response = string(response);
 
+	// changes anchor tags containing floppy to trolly
+	regex a("<a href=\"(.*?)\">"); 
+	parsed_response = regex_replace(parsed_response, a, "<a href=""./trollface.jpg"">");
+
 	// changes image sources containing floppy to trolly
-	regex imgsrc("<img src=.*\\>"); 
-	parsed_response = regex_replace(parsed_response, imgsrc, "<img src=""http://pages.cpsc.ucalgary.ca/~carey/CPSC441/trollface.jpg"" width=""300"" height=""250""/>");
+	regex imgsrc("<img src=.*>"); 
+	parsed_response = regex_replace(parsed_response, imgsrc, "<img src=\"./trollface.jpg\" width=\"300\" height=\"250\">");
 
 	//changes occurences of floppy/Floppy to Trolly
 	regex reFloppy("([fF]loppy)"); 
@@ -190,7 +194,7 @@ int main(int argc, char* const argv[]){
 
 				//change modified response string to char array
 				strcpy(response_array, modified_response(server_response, modify_Header(server_response)).c_str()); 
-				cout<<response_array<<endl; 
+				//cout<<response_array<<endl; 
 
 				//cout<<server_response<<endl; 
 				bcopy(response_array, client_response, serverBytes);
@@ -199,9 +203,11 @@ int main(int argc, char* const argv[]){
 				if (send(data_sock, client_response, serverBytes, 0) < 0){
 					perror("send() call failed...\n");
 				}
+
+				//clear buffers 
 				bzero(client_response, MESSAGE_SIZE);
 				bzero(server_response, MESSAGE_SIZE);
-				//bzero(response_array, MESSAGE_SIZE);
+				bzero(response_array, MESSAGE_SIZE);
 			}
 		}
 
