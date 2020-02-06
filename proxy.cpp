@@ -29,6 +29,7 @@ void cleanExit(int sig){
 }
 
 string modified_response(int newResponseLength, string parsed_response){
+
 	// changes anchor tags containing floppy to trolly
 	regex a("<a href=\"(.*?)\">"); 
 	parsed_response = regex_replace(parsed_response, a, "<a href=""./trollface.jpg"">");
@@ -42,8 +43,8 @@ string modified_response(int newResponseLength, string parsed_response){
 	parsed_response = regex_replace(parsed_response, reFloppy, "Trolly");
 
 	// changes occurences of Italy to Germany
-	regex reItaly("(Italy)"); 
-	parsed_response = regex_replace(parsed_response, reItaly, "Germany");
+	regex reItaly("(\\sItaly)"); 
+	parsed_response = regex_replace(parsed_response, reItaly, " Germany");
 
 	// modified content length 
 	regex contentLength("(Content-Length:.*)"); 
@@ -53,11 +54,13 @@ string modified_response(int newResponseLength, string parsed_response){
 } 
 
 int modify_Header(string parsed_response){
+
 	int startSearch = 0; 
 	int newResponseSize = 0; 
 	int stringLength = parsed_response.length(); 
 	int findCRLF = parsed_response.find("\r\n", startSearch);
 
+	// strip out the message, to get true size 
 	if (findCRLF != std::string::npos){
 		string newResponseLength = parsed_response.substr(findCRLF, stringLength);
 		newResponseSize = newResponseLength.length(); 
@@ -201,15 +204,19 @@ int main(int argc, char* const argv[]){
 				string parsed_response = string(server_response);
 				int messageType = parsed_response.find("Content-Type: text/html", 0);
 
+				// check message type, if image dont modify, else if text modify 
 				if (messageType != std::string::npos){
-					string tmp = modified_response(modify_Header(server_response), parsed_response);
-					cout << tmp << endl; 
-					//send http response to client send
-					if (send(data_sock, tmp.data(), tmp.size(), 0) < 0){
+					string response = modified_response(modify_Header(server_response), parsed_response);
+					cout << response << endl; 
+					//send http response to client 
+					if (send(data_sock, response.data(), response.size(), 0) < 0){
 						perror("send() call failed...\n");
 					}
 				}else{
+					// copy server response to client response buffer 
 					bcopy(server_response, client_response, serverBytes);
+
+					//send http response to client 
 					if (send(data_sock, client_response, serverBytes, 0) < 0){
 						perror("send() call failed...\n");
 					}
