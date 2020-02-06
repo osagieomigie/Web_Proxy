@@ -13,7 +13,6 @@
 
 /* port numbers */
 #define HTTP_PORT 80
-//#define PROXY_PORT 8080
 
 /* string sizes */
 #define MESSAGE_SIZE 2048 
@@ -29,24 +28,22 @@ void cleanExit(int sig){
 	exit(0);
 }
 
-string modified_response(char response [], int newResponseLength){
-	string parsed_response = string(response);
-	
+string modified_response(int newResponseLength, string parsed_response){
 	// changes anchor tags containing floppy to trolly
 	regex a("<a href=\"(.*?)\">"); 
-	parsed_response = regex_replace(parsed_response, a, "<a href=""http://pages.cpsc.ucalgary.ca/~carey/CPSC441/trollface.jpg"">");
+	parsed_response = regex_replace(parsed_response, a, "<a href=""./trollface.jpg"">");
 
 	// changes image sources containing floppy to trolly
-	regex imgsrc("<img src=.*[f|Floppy].*>"); 
-	parsed_response = regex_replace(parsed_response, imgsrc, "<img src=\"http://pages.cpsc.ucalgary.ca/~carey/CPSC441/trollface.jpg\" width=\"300\" height=\"250\">");
+	regex imgsrc("<img src=.*[fF]loppy.*>"); 
+	parsed_response = regex_replace(parsed_response, imgsrc, "<img src=\"./trollface.jpg\" width=\"300\" height=\"250\">");
 
 	//changes occurences of floppy/Floppy to Trolly
 	regex reFloppy("([fF]loppy)"); 
 	parsed_response = regex_replace(parsed_response, reFloppy, "Trolly");
 
-	// changes occurences of Italy to Japan 
+	// changes occurences of Italy to Germany
 	regex reItaly("(Italy)"); 
-	parsed_response = regex_replace(parsed_response, reItaly, "Japan");
+	parsed_response = regex_replace(parsed_response, reItaly, "Germany");
 
 	// modified content length 
 	regex contentLength("(Content-Length:.*)"); 
@@ -55,8 +52,7 @@ string modified_response(char response [], int newResponseLength){
 	return parsed_response;
 } 
 
-int modify_Header(char response []){
-	string parsed_response = string(response);
+int modify_Header(string parsed_response){
 	int startSearch = 0; 
 	int newResponseSize = 0; 
 	int stringLength = parsed_response.length(); 
@@ -74,7 +70,7 @@ int modify_Header(char response []){
 int main(int argc, char* const argv[]){
 
 	if (argc != 2){
-		cout<< "Usage: Enter a valid port number as an argument."<<endl;
+		cout<< "Usage: Enter a valid port number as first argument."<<endl;
 		exit(-1);
 	}
 
@@ -185,32 +181,43 @@ int main(int argc, char* const argv[]){
 			//receive http response from server
 			serverBytes = 0;
 			while((serverBytes = recv(web_sock, server_response, MESSAGE_SIZE, 0)) > 0){
-				
-				// Modify response
-				char response_array[10*MESSAGE_SIZE];
-				string parsed_response = string(server_response);
-				int messageType = parsed_response.find("Content-Type: image", 0);
 
-				cout<<server_response<<endl; 
-				
+				//char response_array[10*MESSAGE_SIZE];
+				// Modify response
+
 				// check message type, if image dont modify 
-				if (messageType == std::string::npos){
-					//change modified response string to char array
-					strcpy(response_array, modified_response(server_response, modify_Header(server_response)).c_str()); 
-					bcopy(response_array, client_response, serverBytes);
+				// if (messageType != std::string::npos){
+				// 	//change modified response string to char array
+				// 	cout<<"Changing response"<<endl;
+				// 	cout<<response_array<<endl;
+				// 	//strcpy(response_array, modified_response(server_response, modify_Header(server_response)).c_str()); 
+				// 	bcopy(response_array, client_response, serverBytes);
+				// }else{
+				// 	cout<<"Not changing response"<<endl;
+				// 	cout<<server_response<<endl;
+				// 	bcopy(server_response, client_response, serverBytes);
+				// }
+
+				string parsed_response = string(server_response);
+				int messageType = parsed_response.find("Content-Type: text/html", 0);
+
+				if (messageType != std::string::npos){
+					string tmp = modified_response(modify_Header(server_response), parsed_response);
+					cout << tmp << endl; 
+					//send http response to client send
+					if (send(data_sock, tmp.data(), tmp.size(), 0) < 0){
+						perror("send() call failed...\n");
+					}
 				}else{
 					bcopy(server_response, client_response, serverBytes);
-				}
-
-				//send http response to client
-				if (send(data_sock, client_response, serverBytes, 0) < 0){
-					perror("send() call failed...\n");
+					if (send(data_sock, client_response, serverBytes, 0) < 0){
+						perror("send() call failed...\n");
+					}
 				}
 
 				//clear buffers 
 				bzero(client_response, MESSAGE_SIZE);
 				bzero(server_response, MESSAGE_SIZE);
-				bzero(response_array, MESSAGE_SIZE);
 			}
 		}
 
