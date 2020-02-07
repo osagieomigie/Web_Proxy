@@ -119,7 +119,16 @@ int main(int argc, char* const argv[]){
 
 	//infinite while loop for listening
 	while (1){
-		cout<<"Accepting connections..."<<endl;
+		cout<<"Accepting connections..."<<endl; 
+
+		//Fork to accept multiple connections 
+		pid_t pid = fork();
+		
+		//fork();
+		// if (pid < 0){
+		// 	cout << "Fork() failed proxing exiting....."<<endl;
+		// 	exit(-1);
+		// }
 
 		//accept client connection request 
 		data_sock = accept(lstn_sock, NULL, NULL);
@@ -230,6 +239,5 @@ int main(int argc, char* const argv[]){
 
 		close(data_sock);
 	}
-
 	return 0;
 }
